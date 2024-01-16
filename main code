@@ -1,0 +1,216 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+// Node structure 
+struct Node {
+    int position;
+    int weight;  
+    struct Node* next;
+};
+
+// Player structure 
+struct Player {
+    char name[50];
+    int position;
+    int score;  
+    int rolls;  
+};
+
+// Function to roll a six-sided die
+int rollDie() {
+    return rand() % 6 + 1;
+}
+
+// Function to print the board
+void printBoard(struct Player* players, int numPlayers) {
+    for (int row = 9; row >= 0; row--) {
+        for (int col = 1; col <= 10; col++) {
+            int position = row * 10 + col;
+            int playerPresent = 0;
+            for (int i = 0; i < numPlayers; i++) {
+                if (players[i].position == position) {
+                    printf("#%s\t", players[i].name);
+                    playerPresent = 1;
+                    break;
+                }
+            }
+            if (!playerPresent) {
+                printf("%d\t", position);
+            }
+        }
+        printf("\n\n");
+    }
+}
+
+// Function to move the player 
+void movePlayer(struct Player* player, int roll, struct Node* snakesAndLadders) {
+    printf("%s rolled a %d.\n", player->name, roll);
+    player->rolls++;
+
+    int newPosition = player->position + roll;
+
+    
+    struct Node* current = snakesAndLadders;
+    while (current != NULL) {
+        if (current->position == newPosition) {
+            printf("Encountered a snake or ladder at position %d.\n", newPosition);
+            player->position += current->weight;
+            if (current->weight > 0) {
+                printf("Climbed a ladder! +%d marks.\n", current->weight);
+                player->score += current->weight;
+            } else {
+                printf("Encountered a snake! -%d marks.\n", abs(current->weight));
+                player->score -= abs(current->weight);
+            }
+            return;  
+        }
+        current = current->next;
+    }
+
+    
+    player->position = newPosition;
+
+    if (player->position > 100) {
+        player->position = 100;  
+    }
+}
+
+// Function to print a message when a player wins
+void declareWinner(struct Player player) {
+    printf("Congratulations, %s! You won with a score of %d and took %d rolls.\n", player.name, player.score, player.rolls);
+}
+
+// Function to free the allocated memory for the linked list
+void freeLinkedList(struct Node* head) {
+    while (head != NULL) {
+        struct Node* temp = head;
+        head = head->next;
+        free(temp);
+    }
+}
+
+// Function to create the linked list based on difficulty level
+struct Node* createSnakesAndLadders(int difficulty) {
+    struct Node* head = NULL;
+
+  
+    struct Node* ladder1 = (struct Node*)malloc(sizeof(struct Node));
+    ladder1->position = 6;
+    ladder1->weight = 40;
+    ladder1->next = NULL;
+
+    struct Node* snake1 = (struct Node*)malloc(sizeof(struct Node));
+    snake1->position = 23;
+    snake1->weight = -10;
+    snake1->next = NULL;
+
+ 
+    ladder1->next = snake1;
+
+    
+    if (difficulty == 1) {
+        // Easy level
+        struct Node* ladder2 = (struct Node*)malloc(sizeof(struct Node));
+        ladder2->position = 32;
+        ladder2->weight = 25;
+        ladder2->next = NULL;
+
+        struct Node* snake2 = (struct Node*)malloc(sizeof(struct Node));
+        snake2->position = 45;
+        snake2->weight = -15;
+        snake2->next = NULL;
+
+      
+        snake1->next = ladder2;
+        ladder2->next = snake2;
+    } else if (difficulty == 2) {
+        // Medium level
+        struct Node* ladder3 = (struct Node*)malloc(sizeof(struct Node));
+        ladder3->position = 15;
+        ladder3->weight = 30;
+        ladder3->next = NULL;
+
+        struct Node* snake3 = (struct Node*)malloc(sizeof(struct Node));
+        snake3->position = 40;
+        snake3->weight = -20;
+        snake3->next = NULL;
+
+  
+        snake1->next = ladder3;
+        ladder3->next = snake3;
+    } else {
+        // Hard level
+        struct Node* ladder4 = (struct Node*)malloc(sizeof(struct Node));
+        ladder4->position = 50;
+        ladder4->weight = 20;
+        ladder4->next = NULL;
+
+        struct Node* snake4 = (struct Node*)malloc(sizeof(struct Node));
+        snake4->position = 75;
+        snake4->weight = -25;
+        snake4->next = NULL;
+
+       
+        snake1->next = ladder4;
+        ladder4->next = snake4;
+    }
+
+    head = ladder1;
+
+    return head;
+}
+
+int main() {
+    srand(time(0));  // Initialize random seed for rand
+
+    int numPlayers;
+    printf("Enter the number of players: ");
+    scanf("%d", &numPlayers);
+
+    struct Player* players = (struct Player*)malloc(numPlayers * sizeof(struct Player));
+
+    for (int i = 0; i < numPlayers; i++) {
+        printf("Enter name for Player %d: ", i + 1);
+        scanf("%s", players[i].name);
+        players[i].position = 1;
+        players[i].score = 0;
+        players[i].rolls = 0;
+    }
+
+    int currentPlayer = 0;
+    int won = 0;
+
+   
+    int difficulty;
+    printf("Choose difficulty level (1: Easy, 2: Medium, 3: Hard): ");
+    scanf("%d", &difficulty);
+
+    struct Node* snakesAndLadders = createSnakesAndLadders(difficulty);
+
+    printf("Snake and Ladder Game\n");
+
+    while (!won) {
+        printf("\n%s, press Enter to roll the die...", players[currentPlayer].name);
+        getchar();  
+        int roll = rollDie();
+        movePlayer(&players[currentPlayer], roll, snakesAndLadders);
+
+        printf("%s is now at position %d with a score of %d.\n\n", players[currentPlayer].name, players[currentPlayer].position, players[currentPlayer].score);
+        printBoard(players, numPlayers);
+
+        if (players[currentPlayer].position == 100) {
+            declareWinner(players[currentPlayer]);
+            won = 1;
+        }
+
+        // Switch to the next player
+        currentPlayer = (currentPlayer + 1) % numPlayers;
+    }
+
+   
+    freeLinkedList(snakesAndLadders);
+    free(players);
+
+    return 0;
+}
